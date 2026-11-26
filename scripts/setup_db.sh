@@ -33,8 +33,17 @@ docker exec honcho-bench-db psql -U postgres -h 127.0.0.1 -p 5433 -c "SELECT 1;"
 
 echo "== 3/5 runtime .env (key stays out of git) =="
 if [ ! -f "$ROOT/.bench_plexus_key" ]; then
-  echo "ERROR: $ROOT/.bench_plexus_key missing — create it with your dedicated Plexus bench key" >&2
-  exit 1
+  if [ -n "${BENCH_API_KEY:-}" ]; then
+    # CI path: the key arrives as an env var (secrets.BENCH_API_KEY), not a
+    # local file. Materialize it so start_honcho.sh / bench.run can read it
+    # from the usual place; the file stays git-ignored.
+    printf '%s' "$BENCH_API_KEY" > "$ROOT/.bench_plexus_key"
+    chmod 600 "$ROOT/.bench_plexus_key"
+    echo "wrote $ROOT/.bench_plexus_key from BENCH_API_KEY"
+  else
+    echo "ERROR: $ROOT/.bench_plexus_key missing — create it with your dedicated Plexus bench key (or set BENCH_API_KEY)" >&2
+    exit 1
+  fi
 fi
 if [ ! -f "$VENDOR/.env" ]; then
   cp "$ROOT/.env.example" "$VENDOR/.env"

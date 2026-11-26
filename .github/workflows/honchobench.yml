@@ -46,6 +46,8 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Vendor honcho + patch judges + sync deps
+        env:
+          BENCH_API_KEY: ${{ secrets.BENCH_API_KEY }}
         run: ./scripts/setup_db.sh
 
       - name: Generate runner datasets (Enron → longmem/locomo/beam/oolong/traces)
