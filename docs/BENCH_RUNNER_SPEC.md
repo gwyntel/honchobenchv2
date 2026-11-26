@@ -7,7 +7,13 @@ Target: a **portable, CI-runnable benchmark runner** living in the `honchobench`
 3. runs the vendored honcho bench suite **plus** the local Enron dataset through the running honcho stack,
 4. emits per-alias numbers as JSON + markdown.
 
-All contracts below are **read from source** at `_vendor/honcho` (commit `4448979`, v3.0.12). Line numbers are cited. Nothing is paraphrased.
+All contracts below are **read from source** at `_vendor/honcho` (commit `2addbf62`, v3.7.0). Line numbers are cited. Nothing is paraphrased.
+
+### v3.7.0 delta (Nov 25, 2026 — bumped from v3.0.12 @ 4448979)
+
+- The six runners this spec covers (longmem, locomo, beam, oolong, molecular, coverage) are **byte-identical** at v3.7.0 — no contract changes. `run_tests.py` still does not exist (confirmed at v3.7.0, not just unmerged).
+- Cosmetic only: `harness.py` pins `"CACHE_CLUSTER": "false"` in the harness env; `runner_common.py` imports `ReasoningLevel`/`REASONING_LEVELS` from `src.config` (same values); `coverage.py`/`molecular.py` use `datetime.UTC`.
+- NEW upstream bench, not covered here: `tests/bench/auto_workspaces/*` (identity linking / grouping / bot-detection, headline F0.5). No interaction with honchobench.
 
 ---
 
@@ -486,7 +492,7 @@ export EMBEDDING_VECTOR_DIMENSIONS=768             # nomic requirement
 
 ## 9. Open items to flag to the parent agent
 
-1. **`run_tests.py` is absent** in this vendored commit — the honest "full suite" is longmem + locomo + beam + oolong + molecular + coverage. If the parent expected `run_tests.py` to be the entry point, that must be reconciled (it may exist in a newer honcho tag, or was never merged).
+1. **`run_tests.py` is absent** in this vendored commit — the honest "full suite" is longmem + locomo + beam + oolong + molecular + coverage. If the parent expected `run_tests.py` to be the entry point, that must be reconciled (confirmed still absent at v3.7.0 — it was never merged upstream).
 2. **longmem/locomo judges cannot be pointed at Plexus without a source patch** (hardcoded model + no base-url plumbing through `create_openai_client`), so judge calls go to `api.openai.com` unless patched.
 3. **beam needs a local `--data-dir` override** — the path is hardcoded to `tests/bench/beam_data` (beam.py:506-509); the runner either places data there or patches one line.
 4. **`tests/bench/.env` must be pre-rendered** in CI (harness copies it into the project root).

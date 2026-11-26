@@ -1,8 +1,21 @@
-# HonchoBench — IRL Evaluation Design: Running Real Honcho v3.0.12 Against the Enron Dataset
+# HonchoBench — IRL Evaluation Design: Running Real Honcho v3.7.0 Against the Enron Dataset
 
 **Date:** 2026-08-15
 **Scope:** Feasibility + design report (evaluation only — **nothing below has been executed**; no server started, no LLM calls made, no long-running containers launched).
-**Source root:** `/home/hermes/projects/honchobench/_vendor/honcho` (commit `4448979`, v3.0.12)
+**Source root:** `/home/hermes/projects/honchobench/_vendor/honcho` (commit `2addbf62`, v3.7.0)
+
+## Pin notes — v3.7.0 @ 2addbf62 (bumped Nov 25, 2026; was v3.0.12 @ 4448979)
+
+Diffed 4448979 → 2addbf62 (340 commits). The six bench runners (longmem, locomo, beam, oolong, molecular, coverage) are **byte-identical** — adapters non-breaking. What changed for this design:
+- Summary defaults moved: `SUMMARY_MAX_TOKENS_SHORT` 1000 → **1500**, `SUMMARY_MAX_TOKENS_LONG` 4000 → **6000**; new `SUMMARY_MAX_INPUT_TOKENS`=100,000 cap; summarizer target is now a 0.6 soft ratio (was a hard 0.75 word cap). **Do not compare summary scores across pins.**
+- `DIALECTIC_HISTORY_TOKEN_LIMIT` removed (→ `DIALECTIC_MAX_QUERY_LENGTH`=10,000); `DREAM_HISTORY_TOKEN_LIMIT` removed with no replacement.
+- `DREAM_MAX_TOOL_ITERATIONS` is now card-refresh only; deduction gets `DEDUCTION_MAX_TOOL_ITERATIONS`=12, induction `INDUCTION_MAX_TOOL_ITERATIONS`=10. Reasoning levels unchanged (minimal=1, low=5, medium=2, high=4, max=10).
+- Deriver prompt changed (messages wrapped in `<message idx peer target time>` tags, markup neutralized) — extraction outputs may shift; structure unchanged. Deriver refuses degraded/empty responses and unwraps structured output nested in tool calls (relevant to Plexus).
+- `conclusions/list` gains optional cursor pagination (offset still works) plus a new `GET /{conclusion_id}`; `Conclusion` gains `source_ids`, `source_message_ids`, `times_derived` — **`source_message_ids` is the recall scorer's ground-truth linkage** (Stage 1), no separate matcher pass needed for that part.
+- Dialectic chat gains `include_evidence` → `DialecticResponse.evidence`. Peer-card PUT now deletes history cards. Message ingestion is atomic (one transaction, retry on deadlock) — fixes the saved-but-never-derived hole.
+- New: experimental Ingest API (`POST /workspaces/{id}/ingest`, up to 100 records/request, `derive: "later"`) — could replace per-message Enron ingestion later; flagged upstream as may-change. Dreams API exposes Representation History. `run_tests.py` still does not exist.
+- Conclusion graph endpoints (PR #1625) are **NOT in v3.7.0** — they land in the 16 commits to main HEAD `1747caf8`. Pin past v3.7.0 if the design wants them.
+- First-boot check: startup validators are no-ops for single-tenant except the `queue_item_batches` trigger check, which fails closed if triggers aren't wired — verify on first boot after the bump.
 **Author's context:** Standalone HonchoBench harness exists at `/home/hermes/projects/honchobench/` and is verified working; this report determines how close to **real, in-the-wild honcho** that harness gets and what a full local instance would require.
 
 ---
@@ -170,7 +183,7 @@ All under the `DeriverSettings` (`config.py:857-973`), env prefix `DERIVER_`:
 
 ### 3.2 Summarizer activation
 
-Summaries run off the same queue (`consumer.py:123` → `summarizer.summarize_if_needed`); no separate flush knob needed — they fire per enqueued `summary` task. Message windows: `SUMMARY.MESSAGES_PER_SHORT_SUMMARY=20`, `SUMMARY.MESSAGES_PER_LONG_SUMMARY=60`. Config toggles: `SUMMARY.ENABLED=true`, `SUMMARY_MAX_TOKENS_SHORT=1000`, `SUMMARY_MAX_TOKENS_LONG=4000`, model via `SUMMARY_MODEL_CONFIG__*` (see §4).
+Summaries run off the same queue (`consumer.py:123` → `summarizer.summarize_if_needed`); no separate flush knob needed — they fire per enqueued `summary` task. Message windows: `SUMMARY.MESSAGES_PER_SHORT_SUMMARY=20`, `SUMMARY.MESSAGES_PER_LONG_SUMMARY=60`. Config toggles: `SUMMARY.ENABLED=true`, `SUMMARY_MAX_TOKENS_SHORT=1500`, `SUMMARY_MAX_TOKENS_LONG=6000` (v3.7.0 defaults; was 1000/4000 at v3.0.12 — see pin notes), model via `SUMMARY_MODEL_CONFIG__*` (see §4).
 
 ### 3.3 Dream activation (on demand)
 

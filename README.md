@@ -8,7 +8,7 @@ conversation corpus through honcho's API, lets the real deriver + summarizer +
 dialectic agents run against any OpenAI-compatible model gateway, then scores
 their output against ground-truth labels.
 
-Built around `plastic-labs/honcho` pinned at commit `4448979`, vendored at
+Built around `plastic-labs/honcho` pinned at commit `2addbf62` (v3.7.0), vendored at
 `_vendor/honcho/` (git-ignored — cloned fresh by `scripts/setup_db.sh`).
 
 ## Why the "supported way"

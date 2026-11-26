@@ -7,7 +7,7 @@
 set -euo pipefail
 
 HONCHO_REPO="https://github.com/plastic-labs/honcho"
-HONCHO_COMMIT="4448979"
+HONCHO_COMMIT="2addbf62"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR="$ROOT/_vendor/honcho"
 
